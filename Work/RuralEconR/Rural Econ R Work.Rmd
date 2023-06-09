@@ -1,0 +1,118 @@
+---
+title: "R work with Rural Economy data"
+output: html_notebook
+---
+
+## Getting packages.
+
+```{r}
+install.packages("pacman")
+library(pacman)
+p_load(pacman, ggplot2, tidyverse, rio, magrittr)
+```
+
+Reshaping the rural econ data set given in the general repository.
+
+```{r}
+#Importing the dataset
+df <- import("rural-econ.csv") %>%
+  as_tibble() %>%
+  print()
+
+#Reshaping the data to a wide dataframe
+df %<>% spread(key = Attribute, value = Value)
+
+#Checking features
+df %>% print()
+df %>% glimpse()
+
+#Filter for when wanting to select specific areas or states
+# df %<>% filter(State == "AR")
+
+#Writing this new data to a file for later use
+df %>% write.csv("rural-econ-edit.csv")
+```
+
+Reshaping the veterans data set from the same USDA study.
+
+```{r}
+#Importing the dataset
+df <- import("Rural_Atlas_Update24/Veterans.csv") %>%
+  as_tibble() %>%
+  print()
+
+#Filter for when wanting to select specific areas or states
+# df %<>% filter(State == "AR")
+
+#Checking features
+df %>%
+  print()
+
+#Reshaping the data into a wide format
+df %<>% spread(key = Attribute, value = Value)
+
+#Writing the new dataframe into a file
+df %>% write.csv("veterans-edit.csv")
+```
+
+Joining the new data together into one data frame and fixing column names.
+
+```{r}
+#Importing the rural econ reshaped data
+df <- import("rural-econ-edit.csv") %>%
+  as_tibble()
+
+#Importing the veterans reshaped data
+otherdf <- import("veterans-edit.csv") %>%
+  as_tibble()
+
+#Joining the data frames
+newdf <- df %>% full_join(otherdf, by="FIPS") %>%
+  print()
+
+#Checking column names
+newdf %>% colnames()
+
+#Renaming columns that are strange
+newdf %<>% rename("State" = State.x,
+                  "County" = County.x,
+                  "V1" = V1.x)
+
+#Removing duplicate columns
+newdf %<>% select(-c(V1.y:County.y))
+
+#Checking the data frame again and column names
+newdf %>% glimpse()
+
+#Seeing if any values are missing
+any(is.na(newdf))
+
+#Writing this joined data frame to a file
+newdf %>% write.csv("VetsAndPoverty.csv")
+
+```
+
+
+```{r}
+df <- import("ARVetsAndPoverty.csv") %>%
+  as_tibble()
+
+
+df %>%
+  ggplot(aes(x =Vets18OPct, 
+             y = Poverty_Rate_ACS)) + 
+  geom_point() +
+  theme(legend.position = "bottom")
+
+df %>%
+  ggplot(aes(x = County,
+             y = Poverty_Rate_ACS)) +
+  geom_col() +
+  theme(legend.position = "bottom")
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
